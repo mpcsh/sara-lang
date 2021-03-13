@@ -1,0 +1,7 @@
+recipe = [ingredient] [instruction]
+
+ingredient = identifier: number unit?
+// White sugar: 500g
+
+instruction = identifier:? verb [identifier|result, comma separated] .
+// Mix white sugar, chocolate, eggs.

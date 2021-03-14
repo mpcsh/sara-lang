@@ -5,7 +5,7 @@ use itertools::Itertools;
 use strum_macros::{Display, EnumString};
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Display, EnumString)]
+#[derive(Debug, PartialEq, Display, EnumString)]
 pub enum Keyword {
 	// Program sigils
 	Ingredients,
@@ -21,7 +21,7 @@ pub enum Keyword {
 	Bake,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
 	Whitespace,
 	Colon,

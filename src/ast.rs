@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Weight {
 	Grams,
 	Kilograms,
@@ -8,27 +8,27 @@ pub enum Weight {
 	Pounds,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Volume {
 	Cups,
 	Teaspoons,
 	Tablespoons,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Temperature {
 	Fahrenheit,
 	Celsius,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Time {
 	Seconds,
 	Minutes,
 	Hours,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Unit {
 	Weight,
 	Volume,
@@ -36,19 +36,19 @@ pub enum Unit {
 	Time,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Amount {
 	pub quantity: f64,
-	pub unit: Unit,
+	pub unit: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Ingredient {
 	pub name: String,
 	pub amount: Amount,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Instruction {
 	Combine {
 		ingredients: Vec<Ingredient>,
@@ -71,7 +71,7 @@ pub enum Instruction {
 	},
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Recipe {
 	pub ingredients: HashMap<String, Amount>,
 	pub instructions: Vec<Instruction>,

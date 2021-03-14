@@ -1,46 +1,54 @@
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, PartialEq)]
-pub enum Weight {
+use strum_macros::EnumString;
+
+#[derive(Debug, PartialEq, EnumString)]
+pub enum IngredientUnit {
+	#[strum(serialize = "g")]
 	Grams,
-	Kilograms,
+
+	#[strum(serialize = "oz")]
 	Ounces,
-	Pounds,
-}
 
-#[derive(Debug, PartialEq)]
-pub enum Volume {
+	#[strum(serialize = "cup", serialize = "cups")]
 	Cups,
+
+	#[strum(serialize = "tsp")]
 	Teaspoons,
+
+	#[strum(serialize = "tbsp")]
 	Tablespoons,
+
+	#[strum(disabled)]
+	Units,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, EnumString)]
 pub enum Temperature {
+	#[strum(serialize = "F")]
 	Fahrenheit,
+
+	#[strum(serialize = "C")]
 	Celsius,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, EnumString)]
 pub enum Time {
+	#[strum(serialize = "s")]
 	Seconds,
-	Minutes,
-	Hours,
-}
 
-#[derive(Debug, PartialEq)]
-pub enum Unit {
-	Weight,
-	Volume,
-	Temperature,
-	Time,
+	#[strum(serialize = "min", serialize = "mins")]
+	Minutes,
+
+	#[strum(serialize = "hr", serialize = "hrs")]
+	Hours,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Amount {
 	pub quantity: f64,
-	pub unit: String,
+	pub unit: IngredientUnit,
 }
 
 #[derive(Debug)]

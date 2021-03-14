@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 use std::iter::{Iterator, Peekable};
+use std::str::FromStr;
 
-use crate::ast::{Recipe, Ingredient, Amount};
+use crate::ast::{Recipe, Ingredient, Amount, IngredientUnit};
 use crate::scan::{Token, Keyword};
 
 type TokenStream<'a> = Peekable<std::slice::Iter<'a, Token>>;
@@ -54,7 +55,14 @@ fn parse_ingredient(stream: &mut TokenStream) -> Result<Ingredient, String> {
 	let name = expect_identifier(stream)?;
 	expect(stream, vec![Token::Colon])?;
 	let quantity = expect_number(stream)?;
-	let unit = expect_identifier(stream)?;
+	let unit = match stream.peek() {
+		Some(Token::Whitespace) => IngredientUnit::Units,
+		_ => {
+			let unit_id = expect_identifier(stream)?;
+			IngredientUnit::from_str(&unit_id)
+				.map_err(|_| format!("Couldn't parse {:?} as IngredientUnit", unit_id))?
+		}
+	};
 
 	Ok(Ingredient { name, amount: Amount { quantity, unit }})
 }
@@ -67,7 +75,6 @@ fn parse_ingredients(stream: &mut TokenStream) -> Result<HashSet<Ingredient>, St
 		expect(stream, vec![Token::Whitespace])?;
 	}
 
-	println!("Ingredients: {:?}", ingredients);
 	Ok(ingredients)
 }
 
@@ -75,6 +82,7 @@ fn parse_recipe(stream: &mut TokenStream) -> Result<Recipe, String> {
 	expect(stream, vec![Token::Keyword(Keyword::Ingredients), Token::Colon, Token::Whitespace])?;
 
 	let ingredients = parse_ingredients(stream)?;
+	println!("Ingredients: {:?}", ingredients);
 
 	unimplemented!()
 }

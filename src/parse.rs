@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::iter::{Iterator, Peekable};
 
 use crate::ast::{Recipe, Ingredient, Amount};
@@ -59,11 +59,16 @@ fn parse_ingredient(stream: &mut TokenStream) -> Result<Ingredient, String> {
 	Ok(Ingredient { name, amount: Amount { quantity, unit }})
 }
 
-fn parse_ingredients(stream: &mut TokenStream) -> Result<HashMap<String, Amount>, String> {
-	let ingredient = parse_ingredient(stream);
-	println!("{:?}", ingredient);
+fn parse_ingredients(stream: &mut TokenStream) -> Result<HashSet<Ingredient>, String> {
+	let mut ingredients = HashSet::new();
 
-	unimplemented!()
+	while stream.peek() != Some(&&Token::Keyword(Keyword::Instructions)) {
+		ingredients.insert(parse_ingredient(stream)?);
+		expect(stream, vec![Token::Whitespace])?;
+	}
+
+	println!("Ingredients: {:?}", ingredients);
+	Ok(ingredients)
 }
 
 fn parse_recipe(stream: &mut TokenStream) -> Result<Recipe, String> {

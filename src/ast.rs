@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug, PartialEq)]
 pub enum Weight {
@@ -42,11 +43,25 @@ pub struct Amount {
 	pub unit: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Ingredient {
 	pub name: String,
 	pub amount: Amount,
 }
+
+impl Hash for Ingredient {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.name.hash(state);
+	}
+}
+
+impl PartialEq for Ingredient {
+	fn eq(&self, other: &Self) -> bool {
+		self.name == other.name
+	}
+}
+
+impl Eq for Ingredient {}
 
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
@@ -71,8 +86,8 @@ pub enum Instruction {
 	},
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Recipe {
-	pub ingredients: HashMap<String, Amount>,
+	pub ingredients: HashSet<Ingredient>,
 	pub instructions: Vec<Instruction>,
 }

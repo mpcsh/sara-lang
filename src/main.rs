@@ -14,7 +14,6 @@ fn main() {
     
     let tokens = scan::scan(source_text);
     println!("Tokens: {:?}", tokens);
-    
-    // scan: [line] -> [token]
-    // parse: [token] -> ast
+    println!();
+    println!("Source text:\n{}", scan::reassemble(tokens.unwrap_or(vec!())))
 }

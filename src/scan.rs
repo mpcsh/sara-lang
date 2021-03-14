@@ -1,21 +1,20 @@
-use std::collections::VecDeque;
-use std::str::Chars;
+use std::iter::Peekable;
+use std::str::{Chars, FromStr};
 
-use std::str::FromStr;
-use strum_macros::EnumString;
+use itertools::Itertools;
+use strum_macros::{Display,EnumString};
 
-type Scan<T> = Result<T, String>;
-
-#[derive(Debug, EnumString)]
+#[allow(non_camel_case_types)]
+#[derive(Debug, Display, EnumString)]
 pub enum Keyword {
   // Program sigils
   Ingredients,
   Instructions,
   Result,
-  
+
   // Instructions
   Combine,
-  Cut, Into,
+  Cut, into,
   Mix,
   Refridgerate,
   Bake,
@@ -23,6 +22,7 @@ pub enum Keyword {
 
 #[derive(Debug)]
 pub enum Token {
+  Whitespace,
   Colon,
   Comma,
   Identifier(String),
@@ -30,46 +30,88 @@ pub enum Token {
   Number(f64),
 }
 
-fn keyword(first: char, chars: &mut Chars) -> Result<Keyword, String> {
-  let mut rest = chars.take_while(|c|
-    ('a'..='z').contains(&c) ||
-    ('A'..='Z').contains(&c)
-  ).collect::<VecDeque<char>>();
+fn next_number(stream: &mut Peekable<Chars>) -> Result<f64, String> {
+  let source = stream
+    .peeking_take_while(|&c| c.is_numeric() || c == '.' || c == ',')
+    .collect::<String>();
   
-  rest.push_front(first);
-  let id = rest.into_iter().collect::<String>();
-  Keyword::from_str(&id).map_err(|_| id)
+  source
+    .parse::<f64>()
+    .map_err(|_| format!("Failed to scan \"{:?}\" as a number", source))
 }
 
-// fn identifier(word) -> Scan<String> {
-//   let rest = chars.take_while(|c|
-//     ('a'..='z').contains(&c) ||
-//     ('A'..='Z').contains(&c) ||
-//     ['-', ' '].contains(&c)
-//   ).collect::<String>();
+fn next_word(stream: &mut Peekable<Chars>) -> Option<String> {
+  let word = stream
+    .peeking_take_while(|&c| c.is_alphabetic() || c == '-')
+    .collect::<String>();
 
-//   return Ok(format!("{}{}", first, rest));
-// }
+  if word == "" { None } else { Some(word) }
+}
 
-pub fn scan(source_text: String) -> Scan<Vec<Token>> {
+pub fn scan(source_text: String) -> Result<Vec<Token>, String> {
   let mut tokens = Vec::new();
-  
-  let words = &mut source_text.split(char::is_whitespace);
+
+  let stream = &mut source_text.chars().peekable();
   loop {
-    let word = match words.next() {
-      Some(w) => w,
-      None => break,
-    };
-
-    tokens.push(
-      match word {
-        ":" => Token::Colon,
-        "," => Token::Comma,
-        _ if let Ok(keyword) = Keyword::from_str(word) => Token::Keyword(keyword),
-        _ => Token::Identifier(word.to_string())
+    match stream.peek() {
+      None => { return Ok(tokens); }
+      Some(&c) if c.is_whitespace() && c != ' ' => {
+        let last_token = tokens.last();
+        match last_token {
+          Some(Token::Whitespace) => {}
+          Some(_) | None => { tokens.push(Token::Whitespace); }
+        }
+        stream.next();
       }
-    );
+      Some(' ') => { stream.next(); }
+      Some(':') => {
+        tokens.push(Token::Colon);
+        stream.next();
+      }
+      Some(',') => {
+        tokens.push(Token::Comma);
+        stream.next();
+      }
+      Some(c) if c.is_numeric() => {
+        tokens.push(Token::Number(next_number(stream)?));
+      }
+      Some(c) if c.is_alphabetic() => {
+        match next_word(stream) {
+          None => unreachable!(),
+          Some(word) if let Ok(keyword) = Keyword::from_str(&word) => {
+            tokens.push(Token::Keyword(keyword));
+          }
+          Some(word) => {
+            if let Some(Token::Identifier(id)) = tokens.last_mut() {
+              id.push(' ');
+              id.push_str(&word);
+            }
+            else {
+              tokens.push(Token::Identifier(word));
+            }
+          }
+        }
+      }
+      Some(c) => {
+        return Err(format!("Unrecognized input \"{:?}\"", c));
+      }
+    };
   }
+}
 
-  return Ok(tokens);
+pub fn reassemble(tokens: Vec<Token>) -> String {
+  tokens
+    .iter()
+    .map(|t| match t {
+      Token::Whitespace => "\n".to_string(),
+      Token::Colon => ":".to_string(),
+      Token::Comma => ",".to_string(),
+      Token::Identifier(identifier) => identifier.to_string(),
+      Token::Keyword(keyword) => keyword.to_string(),
+      Token::Number(number) => number.to_string(),
+    })
+    .collect::<Vec<String>>()
+    .iter()
+    .flat_map(|s| s.chars())
+    .collect()
 }

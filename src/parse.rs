@@ -2,8 +2,8 @@ use std::collections::HashSet;
 use std::iter::{Iterator, Peekable};
 use std::str::FromStr;
 
-use crate::ast::{Recipe, Ingredient, Amount, IngredientUnit};
-use crate::scan::{Token, Keyword};
+use crate::ast::{Amount, Ingredient, IngredientUnit, Recipe};
+use crate::scan::{Keyword, Token};
 
 type TokenStream<'a> = Peekable<std::slice::Iter<'a, Token>>;
 
@@ -14,7 +14,10 @@ fn expect(stream: &mut TokenStream, tokens: Vec<Token>) -> Result<(), String> {
 				return Err(format!("Expected token {:?}, but got nothing", expected));
 			}
 			Some(received) if received != &expected => {
-				return Err(format!("Expected token {:?}, but got token {:?}", expected, received));
+				return Err(format!(
+					"Expected token {:?}, but got token {:?}",
+					expected, received
+				));
 			}
 			_ => {}
 		}
@@ -25,29 +28,17 @@ fn expect(stream: &mut TokenStream, tokens: Vec<Token>) -> Result<(), String> {
 
 fn expect_identifier(stream: &mut TokenStream) -> Result<String, String> {
 	match stream.next() {
-		Some(Token::Identifier(id)) => {
-			Ok(id.to_string())
-		}
-		Some(token) => {
-			Err(format!("Expected identifier, but got token {:?}", token))
-		}
-		None => {
-			Err(format!("Expected identifier, but got nothing"))
-		}
+		Some(Token::Identifier(id)) => Ok(id.to_string()),
+		Some(token) => Err(format!("Expected identifier, but got token {:?}", token)),
+		None => Err(format!("Expected identifier, but got nothing")),
 	}
 }
 
 fn expect_number(stream: &mut TokenStream) -> Result<f64, String> {
 	match stream.next() {
-		Some(Token::Number(num)) => {
-			Ok(*num)
-		}
-		Some(token) => {
-			Err(format!("Expected number, but got token {:?}", token))
-		}
-		None => {
-			Err(format!("Expected number, but got nothing"))
-		}
+		Some(Token::Number(num)) => Ok(*num),
+		Some(token) => Err(format!("Expected number, but got token {:?}", token)),
+		None => Err(format!("Expected number, but got nothing")),
 	}
 }
 
@@ -64,7 +55,10 @@ fn parse_ingredient(stream: &mut TokenStream) -> Result<Ingredient, String> {
 		}
 	};
 
-	Ok(Ingredient { name, amount: Amount { quantity, unit }})
+	Ok(Ingredient {
+		name,
+		amount: Amount { quantity, unit },
+	})
 }
 
 fn parse_ingredients(stream: &mut TokenStream) -> Result<HashSet<Ingredient>, String> {
@@ -79,7 +73,14 @@ fn parse_ingredients(stream: &mut TokenStream) -> Result<HashSet<Ingredient>, St
 }
 
 fn parse_recipe(stream: &mut TokenStream) -> Result<Recipe, String> {
-	expect(stream, vec![Token::Keyword(Keyword::Ingredients), Token::Colon, Token::Whitespace])?;
+	expect(
+		stream,
+		vec![
+			Token::Keyword(Keyword::Ingredients),
+			Token::Colon,
+			Token::Whitespace,
+		],
+	)?;
 
 	let ingredients = parse_ingredients(stream)?;
 	println!("Ingredients: {:?}", ingredients);
@@ -88,5 +89,5 @@ fn parse_recipe(stream: &mut TokenStream) -> Result<Recipe, String> {
 }
 
 pub fn parse(tokens: Vec<Token>) -> Result<Recipe, String> {
-  return parse_recipe(&mut tokens.iter().peekable());
+	return parse_recipe(&mut tokens.iter().peekable());
 }

@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(incomplete_features)]
 #![feature(if_let_guard)]
+#![feature(or_patterns)]
 
 use std::env::args;
 use std::fs::read_to_string;
@@ -9,7 +10,7 @@ mod ast;
 mod parse;
 mod scan;
 
-fn interpret(source_text: String) -> Result<ast::Recipe, String> {
+fn interpret<'a>(source_text: String) -> Result<ast::Recipe<'a>, String> {
 	let tokens = scan::scan(source_text)?;
 	println!("Tokens: {:?}", tokens);
 	println!();

@@ -62,6 +62,15 @@ fn parse_ingredient(stream: &mut TokenStream) -> Result<Ingredient, String> {
 }
 
 fn parse_ingredients(stream: &mut TokenStream) -> Result<HashSet<Ingredient>, String> {
+	expect(
+		stream,
+		vec![
+			Token::Keyword(Keyword::Ingredients),
+			Token::Colon,
+			Token::Whitespace,
+		],
+	)?;
+
 	let mut ingredients = HashSet::new();
 
 	while stream.peek() != Some(&&Token::Keyword(Keyword::Instructions)) {
@@ -72,22 +81,11 @@ fn parse_ingredients(stream: &mut TokenStream) -> Result<HashSet<Ingredient>, St
 	Ok(ingredients)
 }
 
-fn parse_recipe(stream: &mut TokenStream) -> Result<Recipe, String> {
-	expect(
-		stream,
-		vec![
-			Token::Keyword(Keyword::Ingredients),
-			Token::Colon,
-			Token::Whitespace,
-		],
-	)?;
+pub fn parse(tokens: Vec<Token>) -> Result<Recipe, String> {
+	let stream = &mut tokens.iter().peekable();
 
 	let ingredients = parse_ingredients(stream)?;
 	println!("Ingredients: {:?}", ingredients);
 
 	unimplemented!()
-}
-
-pub fn parse(tokens: Vec<Token>) -> Result<Recipe, String> {
-	return parse_recipe(&mut tokens.iter().peekable());
 }

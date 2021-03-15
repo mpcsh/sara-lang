@@ -24,8 +24,14 @@ pub enum IngredientUnit {
 	Units,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Amount {
+	pub quantity: f64,
+	pub unit: IngredientUnit,
+}
+
 #[derive(Debug, PartialEq, EnumString)]
-pub enum Temperature {
+pub enum TemperatureUnit {
 	#[strum(serialize = "F")]
 	Fahrenheit,
 
@@ -33,8 +39,14 @@ pub enum Temperature {
 	Celsius,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Temperature {
+	pub degrees: f64,
+	pub unit: TemperatureUnit,
+}
+
 #[derive(Debug, PartialEq, EnumString)]
-pub enum Time {
+pub enum TimeUnit {
 	#[strum(serialize = "s")]
 	Seconds,
 
@@ -46,9 +58,9 @@ pub enum Time {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Amount {
-	pub quantity: f64,
-	pub unit: IngredientUnit,
+pub struct Time {
+	pub duration: f64,
+	pub unit: TimeUnit,
 }
 
 #[derive(Debug)]
@@ -59,43 +71,46 @@ pub struct Ingredient {
 
 impl Hash for Ingredient {
 	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.name.hash(state);
+		self.name.to_lowercase().hash(state);
 	}
 }
 
 impl PartialEq for Ingredient {
 	fn eq(&self, other: &Self) -> bool {
-		self.name == other.name
+		self.name.to_lowercase() == other.name.to_lowercase()
 	}
 }
 
 impl Eq for Ingredient {}
 
-#[derive(Debug, PartialEq)]
-pub enum Instruction {
+#[derive(Debug)]
+pub enum Reference<'a> {
+	Result,
+	Ingredient(&'a Ingredient),
+}
+
+#[derive(Debug)]
+pub enum Instruction<'a> {
 	Combine {
-		ingredients: Vec<Ingredient>,
+		ingredients: Vec<Reference<'a>>,
 	},
 	CutInto {
-		source: Ingredient,
-		destination: Ingredient,
-	},
-	Mix {
-		ingredients: Vec<Ingredient>,
+		source: Reference<'a>,
+		destination: Reference<'a>,
 	},
 	Refridgerate {
-		ingredient: Ingredient,
+		ingredient: Reference<'a>,
 		time: Time,
 	},
 	Bake {
-		ingredient: Ingredient,
+		ingredient: Reference<'a>,
 		temperature: Temperature,
 		time: Time,
 	},
 }
 
 #[derive(Debug)]
-pub struct Recipe {
+pub struct Recipe<'a> {
 	pub ingredients: HashSet<Ingredient>,
-	pub instructions: Vec<Instruction>,
+	pub instructions: Vec<Instruction<'a>>,
 }

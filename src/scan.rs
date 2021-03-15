@@ -4,19 +4,18 @@ use std::str::{Chars, FromStr};
 use itertools::Itertools;
 use strum_macros::{Display, EnumString};
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Display, EnumString)]
+#[derive(Clone, Copy, Debug, PartialEq, Display, EnumString)]
 pub enum Keyword {
 	// Program sigils
 	Ingredients,
 	Instructions,
-	Result,
 
 	// Instructions
 	Combine,
-	Cut,
-	into,
 	Mix,
+	Cut,
+	#[strum(serialize = "into")]
+	Into,
 	Refridgerate,
 	Bake,
 }

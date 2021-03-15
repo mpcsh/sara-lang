@@ -11,9 +11,11 @@ mod parse;
 mod scan;
 
 use parse::Parser;
+use scan::Scanner;
 
 fn interpret<'a>(source_text: String) -> Result<ast::Recipe, String> {
-	let tokens = scan::scan(source_text)?;
+	let scanner = Scanner::new(&source_text);
+	let tokens = scanner.scan()?;
 	println!("Tokens: {:?}", tokens);
 	println!();
 

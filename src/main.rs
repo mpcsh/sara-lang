@@ -10,12 +10,15 @@ mod ast;
 mod parse;
 mod scan;
 
-fn interpret<'a>(source_text: String) -> Result<ast::Recipe<'a>, String> {
+use parse::Parser;
+
+fn interpret<'a>(source_text: String) -> Result<ast::Recipe, String> {
 	let tokens = scan::scan(source_text)?;
 	println!("Tokens: {:?}", tokens);
 	println!();
 
-	let recipe = parse::parse(tokens)?;
+	let parser = Parser::new(&tokens);
+	let recipe = parser.parse()?;
 	println!("AST: {:?}", recipe);
 	println!();
 
@@ -31,5 +34,5 @@ fn main() {
 	println!();
 
 	let result = interpret(source_text);
-	println!("{:?}", result);
+	println!("Result: {:?}", result);
 }

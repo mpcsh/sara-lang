@@ -1,10 +1,10 @@
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
+use std::collections::HashMap;
 
 use strum_macros::EnumString;
+use unicase::UniCase;
 
 #[derive(Debug, PartialEq, EnumString)]
-pub enum IngredientUnit {
+pub enum AmountUnit {
 	#[strum(serialize = "g")]
 	Grams,
 
@@ -27,7 +27,7 @@ pub enum IngredientUnit {
 #[derive(Debug, PartialEq)]
 pub struct Amount {
 	pub quantity: f64,
-	pub unit: IngredientUnit,
+	pub unit: AmountUnit,
 }
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -63,54 +63,30 @@ pub struct Time {
 	pub unit: TimeUnit,
 }
 
-#[derive(Debug)]
-pub struct Ingredient {
-	pub name: String,
-	pub amount: Amount,
-}
-
-impl Hash for Ingredient {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.name.to_lowercase().hash(state);
-	}
-}
-
-impl PartialEq for Ingredient {
-	fn eq(&self, other: &Self) -> bool {
-		self.name.to_lowercase() == other.name.to_lowercase()
-	}
-}
-
-impl Eq for Ingredient {}
+pub type Reference = UniCase<String>;
 
 #[derive(Debug)]
-pub enum Reference<'a> {
-	Result,
-	Ingredient(&'a Ingredient),
-}
-
-#[derive(Debug)]
-pub enum Instruction<'a> {
+pub enum Instruction {
 	Combine {
-		ingredients: Vec<Reference<'a>>,
+		ingredients: Vec<Reference>,
 	},
 	CutInto {
-		source: Reference<'a>,
-		destination: Reference<'a>,
+		source: Reference,
+		destination: Reference,
 	},
 	Refridgerate {
-		ingredient: Reference<'a>,
+		ingredient: Reference,
 		time: Time,
 	},
 	Bake {
-		ingredient: Reference<'a>,
+		ingredient: Reference,
 		temperature: Temperature,
 		time: Time,
 	},
 }
 
 #[derive(Debug)]
-pub struct Recipe<'a> {
-	pub ingredients: HashSet<Ingredient>,
-	pub instructions: Vec<Instruction<'a>>,
+pub struct Recipe {
+	pub ingredients: HashMap<Reference, Amount>,
+	pub instructions: Vec<Instruction>,
 }

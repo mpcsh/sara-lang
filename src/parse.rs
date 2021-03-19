@@ -5,9 +5,7 @@ use std::str::FromStr;
 
 use unicase::UniCase;
 
-use crate::ast::{
-	Amount, AmountUnit, Instruction, Recipe, Reference, Temperature, TemperatureUnit, Time, TimeUnit,
-};
+use crate::ast::{Amount, AmountUnit, Instruction, Recipe, Reference, Temperature, TemperatureUnit, Time, TimeUnit};
 use crate::scan::{Keyword, Token};
 
 pub struct Parser<'a> {
@@ -31,10 +29,7 @@ impl<'a> Parser<'a> {
 					return Err(format!("Expected token {:?}, but got nothing", expected));
 				}
 				Some(received) if received != &expected => {
-					return Err(format!(
-						"Expected token {:?}, but got token {:?}",
-						expected, received
-					));
+					return Err(format!("Expected token {:?}, but got token {:?}", expected, received));
 				}
 				_ => {}
 			}
@@ -71,11 +66,10 @@ impl<'a> Parser<'a> {
 		self.expect(vec![Token::Colon])?;
 		let quantity = self.expect_number()?;
 		let unit = match self.peek() {
-			Some(Token::Whitespace) => AmountUnit::Units,
+			Some(Token::Newline) => AmountUnit::Units,
 			_ => {
 				let unit_id = self.expect_identifier()?;
-				AmountUnit::from_str(&unit_id)
-					.map_err(|_| format!("Couldn't parse {:?} as AmountUnit", unit_id))?
+				AmountUnit::from_str(&unit_id).map_err(|_| format!("Couldn't parse {:?} as AmountUnit", unit_id))?
 			}
 		};
 
@@ -83,16 +77,12 @@ impl<'a> Parser<'a> {
 	}
 
 	fn parse_ingredients(&mut self) -> Result<(), String> {
-		self.expect(vec![
-			Token::Keyword(Keyword::Ingredients),
-			Token::Colon,
-			Token::Whitespace,
-		])?;
+		self.expect(vec![Token::Keyword(Keyword::Ingredients), Token::Colon, Token::Newline])?;
 
 		while self.peek() != Some(&&Token::Keyword(Keyword::Instructions)) {
 			let (name, amount) = self.parse_ingredient()?;
 			self.mise_en_place.insert(name, amount);
-			self.expect(vec![Token::Whitespace])?;
+			self.expect(vec![Token::Newline])?;
 		}
 
 		Ok(())
@@ -119,17 +109,14 @@ impl<'a> Parser<'a> {
 			references.push(reference);
 
 			match self.peek() {
-				Some(Token::Whitespace) => {
+				Some(Token::Newline) => {
 					return Ok(references);
 				}
 				Some(Token::Comma) => {
 					self.next();
 				}
 				Some(token) => {
-					return Err(format!(
-						"Expected comma or whitespace but got token {:?}",
-						token
-					));
+					return Err(format!("Expected comma or whitespace but got token {:?}", token));
 				}
 				None => {
 					return Err("Expected comma or whitespace but got nothing".to_string());
@@ -152,10 +139,7 @@ impl<'a> Parser<'a> {
 				let source = self.expect_reference()?;
 				self.expect(vec![Token::Keyword(Keyword::Into)])?;
 				let destination = self.expect_reference()?;
-				Ok(Instruction::CutInto {
-					source,
-					destination,
-				})
+				Ok(Instruction::CutInto { source, destination })
 			}
 			Keyword::Into => Err("Cursor should never reach bare Into keyword".to_string()),
 
@@ -163,8 +147,7 @@ impl<'a> Parser<'a> {
 				let ingredient = self.expect_reference()?;
 				let duration = self.expect_number()?;
 				let unit_id = self.expect_identifier()?;
-				let unit = TimeUnit::from_str(&unit_id)
-					.map_err(|_| format!("Couldn't parse {:?} as TimeUnit", unit_id))?;
+				let unit = TimeUnit::from_str(&unit_id).map_err(|_| format!("Couldn't parse {:?} as TimeUnit", unit_id))?;
 
 				Ok(Instruction::Refridgerate {
 					ingredient,
@@ -177,18 +160,13 @@ impl<'a> Parser<'a> {
 
 				let degrees = self.expect_number()?;
 				let temperature_unit_id = self.expect_identifier()?;
-				let temperature_unit =
-					TemperatureUnit::from_str(&temperature_unit_id).map_err(|_| {
-						format!(
-							"Couldn't parse {:?} as TemperatureUnit",
-							temperature_unit_id
-						)
-					})?;
+				let temperature_unit = TemperatureUnit::from_str(&temperature_unit_id)
+					.map_err(|_| format!("Couldn't parse {:?} as TemperatureUnit", temperature_unit_id))?;
 
 				let duration = self.expect_number()?;
 				let time_unit_id = self.expect_identifier()?;
-				let time_unit = TimeUnit::from_str(&time_unit_id)
-					.map_err(|_| format!("Couldn't parse {:?} as TimeUnit", time_unit_id))?;
+				let time_unit =
+					TimeUnit::from_str(&time_unit_id).map_err(|_| format!("Couldn't parse {:?} as TimeUnit", time_unit_id))?;
 
 				Ok(Instruction::Bake {
 					ingredient,
@@ -211,7 +189,7 @@ impl<'a> Parser<'a> {
 		let mut instructions = Vec::new();
 
 		while !self.peek().is_none() {
-			self.expect(vec![Token::Whitespace])?;
+			self.expect(vec![Token::Newline])?;
 			instructions.push(self.parse_instruction()?);
 		}
 

@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::fmt;
 use std::iter::Peekable;
 use std::str::{Chars, FromStr};
 
@@ -20,9 +22,9 @@ pub enum Keyword {
 	Bake,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
-	Whitespace,
+	Newline,
 	Colon,
 	Comma,
 	Identifier(String),
@@ -30,107 +32,152 @@ pub enum Token {
 	Number(f64),
 }
 
+#[derive(Debug)]
+pub struct ScanError {
+	source_text: String,
+	description: String,
+	line: usize,
+	column: usize,
+}
+
+impl fmt::Display for ScanError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let leading_whitespace = self
+			.source_text
+			.chars()
+			.take_while(|c| c.is_whitespace())
+			.collect::<String>();
+		writeln!(f, "Scan error: {}", self.description)?;
+		writeln!(f, "--> {}:{}", self.line, self.column + leading_whitespace.len())?;
+		writeln!(f, "{}", self.source_text)
+	}
+}
+
+impl Error for ScanError {}
+
+pub type ScanResult<T> = Result<T, ScanError>;
+
 pub struct Scanner<'a> {
+	source_text: &'a String,
 	stream: Peekable<Chars<'a>>,
+	tokens: Vec<Token>,
+	line: usize,
+	column: usize,
 }
 
 impl<'a> Scanner<'a> {
 	fn next(&mut self) -> Option<char> {
-		self.stream.next()
+		let next = self.stream.next();
+		if next == Some('\n') {
+			self.line += 1;
+			self.column = 0;
+		} else {
+			self.column += 1;
+		}
+		next
 	}
 
 	fn peek(&mut self) -> Option<&char> {
 		self.stream.peek()
 	}
 
-	fn next_number(&mut self) -> Result<f64, String> {
-		let source = self.stream
-			.peeking_take_while(|&c| c.is_numeric() || c == '.' || c == ',')
-			.collect::<String>();
-
-		source
-			.parse::<f64>()
-			.map_err(|_| format!("Failed to scan \"{:?}\" as a number", source))
+	fn push(&mut self, token: Token) {
+		self.tokens.push(token)
 	}
 
-	fn next_word(&mut self) -> Option<String> {
-		let word = self.stream
-			.peeking_take_while(|&c| c.is_alphabetic() || c == '-')
-			.collect::<String>();
-
-		if word == "" {
-			None
-		} else {
-			Some(word)
+	fn error(&self, description: String) -> ScanError {
+		ScanError {
+			source_text: self.source_text.split("\n").nth(self.line - 1).unwrap().to_string(),
+			description: description,
+			line: self.line,
+			column: self.column,
 		}
 	}
 
-	pub fn scan(mut self) -> Result<Vec<Token>, String> {
-		let mut tokens = Vec::new();
+	fn next_number(&mut self) -> ScanResult<f64> {
+		let source = self
+			.stream
+			.peeking_take_while(|&c| c.is_numeric() || c == '.' || c == ',')
+			.collect::<String>();
 
+		self.column += source.len();
+
+		source
+			.parse::<f64>()
+			.map_err(|_| self.error(format!("Failed to scan \"{:?}\" as a number", source)))
+	}
+
+	fn next_word(&mut self) -> ScanResult<String> {
+		let word = self
+			.stream
+			.peeking_take_while(|&c| c.is_alphabetic() || c == '-')
+			.collect::<String>();
+
+		self.column += word.len();
+
+		if word == "" {
+			Err(self.error("Expected word, but got none".to_string()))
+		} else {
+			Ok(word)
+		}
+	}
+
+	pub fn scan(mut self) -> ScanResult<Vec<Token>> {
 		loop {
 			match self.peek() {
-				None => { return Ok(tokens); }
-				Some(&c) if c.is_whitespace() && c != ' ' => {
-					let last_token = tokens.last();
-					match last_token {
-						Some(Token::Whitespace) => {}
-						Some(_) | None => { tokens.push(Token::Whitespace); }
-					}
+				None => {
+					return Ok(self.tokens);
+				}
+				Some('\n') => {
+					self.push(Token::Newline);
 					self.next();
 				}
-				Some(' ') => { self.next(); }
+				Some(&c) if c.is_whitespace() => {
+					self.next();
+				}
 				Some(':') => {
-					tokens.push(Token::Colon);
+					self.push(Token::Colon);
 					self.next();
 				}
 				Some(',') => {
-					tokens.push(Token::Comma);
+					self.push(Token::Comma);
 					self.next();
 				}
 				Some(c) if c.is_numeric() => {
-					tokens.push(Token::Number(self.next_number()?));
+					let number = self.next_number()?;
+					self.push(Token::Number(number));
 				}
 				Some(c) if c.is_alphabetic() => {
-					match self.next_word() {
-						None => unreachable!(),
-						Some(word) if let Ok(keyword) = Keyword::from_str(&word) => {
-						tokens.push(Token::Keyword(keyword));
-						}
-						Some(word) if let Some(Token::Identifier(id)) = tokens.last_mut() => {
-							id.push(' ');
-							id.push_str(&word);
-						}
-						Some(word) => {
-						tokens.push(Token::Identifier(word));
-						}
+					let word = self.next_word()?;
+					// if it's a keyword, push a keyword
+					if let Ok(keyword) = Keyword::from_str(&word) {
+						self.push(Token::Keyword(keyword));
+					}
+					// else if the last token was an identifier, concatenate
+					else if let Some(Token::Identifier(id)) = self.tokens.last_mut() {
+						id.push(' ');
+						id.push_str(&word);
+					}
+					// else, push a new identifier
+					else {
+						self.push(Token::Identifier(word));
 					}
 				}
 				Some(c) => {
-					return Err(format!("Unrecognized input \"{:?}\"", c));
+					let description = format!("Unrecognized input \"{:?}\"", c);
+					return Err(self.error(description));
 				}
 			};
 		}
 	}
 
 	pub fn new(source_text: &'a String) -> Self {
-		Scanner { stream: source_text.chars().peekable() }
+		Scanner {
+			source_text,
+			stream: source_text.chars().peekable(),
+			tokens: Default::default(),
+			line: 1,
+			column: 1,
+		}
 	}
-}
-
-pub fn reassemble(tokens: Vec<Token>) -> String {
-	tokens
-		.iter()
-		.map(|t| match t {
-			Token::Whitespace => "\n".to_string(),
-			Token::Colon => ":".to_string(),
-			Token::Comma => ",".to_string(),
-			Token::Identifier(identifier) => identifier.to_string(),
-			Token::Keyword(keyword) => keyword.to_string(),
-			Token::Number(number) => number.to_string(),
-		})
-		.collect::<Vec<String>>()
-		.iter()
-		.flat_map(|s| s.chars())
-		.collect()
 }

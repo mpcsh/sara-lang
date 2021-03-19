@@ -36,5 +36,5 @@ fn main() {
 	println!();
 
 	let result = interpret(source_text);
-	println!("Result: {:?}", result);
+	println!("Result: {:#?}", result);
 }

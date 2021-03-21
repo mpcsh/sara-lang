@@ -19,7 +19,7 @@ fn interpret<'a>(source_text: String) -> Result<Recipe, Box<dyn Error>> {
 	let scanner = Scanner::new(&source_text);
 	let tokens = scanner.scan()?;
 
-	let parser = Parser::new(&tokens);
+	let parser = Parser::new(&source_text, &tokens);
 	let recipe = parser.parse()?;
 
 	return Ok(recipe);

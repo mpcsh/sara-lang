@@ -9,13 +9,19 @@ use crate::ast::{Amount, AmountUnit, Instruction, Recipe, Reference, Temperature
 use crate::scan::{Keyword, Token};
 
 pub struct Parser<'a> {
+	source_text: &'a String,
 	stream: Peekable<std::slice::Iter<'a, Token>>,
 	mise_en_place: HashMap<Reference, Amount>,
+	line: usize,
 }
 
 impl<'a> Parser<'a> {
 	fn next(&mut self) -> Option<&Token> {
-		self.stream.next()
+		let next = self.stream.next();
+		if next == Some(&Token::Newline) {
+			self.line += 1;
+		}
+		next
 	}
 
 	fn peek(&mut self) -> Option<&&Token> {
@@ -206,10 +212,12 @@ impl<'a> Parser<'a> {
 		})
 	}
 
-	pub fn new(tokens: &'a Vec<Token>) -> Self {
+	pub fn new(source_text: &'a String, tokens: &'a Vec<Token>) -> Self {
 		Parser {
+			source_text,
 			stream: tokens.iter().peekable(),
 			mise_en_place: Default::default(),
+			line: 1,
 		}
 	}
 }

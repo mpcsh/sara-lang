@@ -5,12 +5,12 @@ use std::str::FromStr;
 
 use unicase::UniCase;
 
-use crate::ast::{Amount, AmountUnit, Instruction, Recipe, Reference, Temperature, TemperatureUnit, Time, TimeUnit};
+use crate::ast::{Amount, AmountUnit, Ingredient, Instruction, Recipe, Temperature, TemperatureUnit, Time, TimeUnit};
 use crate::scan::{Keyword, Token};
 
 pub struct Parser<'a> {
 	stream: Peekable<std::slice::Iter<'a, Token>>,
-	mise_en_place: HashMap<Reference, Amount>,
+	mise_en_place: HashMap<Ingredient, Amount>,
 }
 
 impl<'a> Parser<'a> {
@@ -61,7 +61,7 @@ impl<'a> Parser<'a> {
 		}
 	}
 
-	fn parse_ingredient(&mut self) -> Result<(Reference, Amount), String> {
+	fn parse_ingredient(&mut self) -> Result<(Ingredient, Amount), String> {
 		let name = UniCase::from(self.expect_identifier()?);
 		self.expect(vec![Token::Colon])?;
 		let quantity = self.expect_number()?;
@@ -88,7 +88,7 @@ impl<'a> Parser<'a> {
 		Ok(())
 	}
 
-	fn expect_reference(&mut self) -> Result<Reference, String> {
+	fn expect_reference(&mut self) -> Result<Ingredient, String> {
 		let reference = UniCase::from(self.expect_identifier()?);
 
 		if reference == UniCase::new("result") {
@@ -102,7 +102,7 @@ impl<'a> Parser<'a> {
 		return Err(format!("Could not find ingredient {:?}", reference));
 	}
 
-	fn expect_reference_list(&mut self) -> Result<Vec<Reference>, String> {
+	fn expect_reference_list(&mut self) -> Result<Vec<Ingredient>, String> {
 		let mut references = Vec::new();
 		loop {
 			let reference = self.expect_reference()?;

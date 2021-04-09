@@ -63,23 +63,23 @@ pub struct Time {
 	pub unit: TimeUnit,
 }
 
-pub type Reference = UniCase<String>;
+pub type Ingredient = UniCase<String>;
 
 #[derive(Debug)]
 pub enum Instruction {
 	Combine {
-		ingredients: Vec<Reference>,
+		ingredients: Vec<Ingredient>,
 	},
 	CutInto {
-		source: Reference,
-		destination: Reference,
+		source: Ingredient,
+		destination: Ingredient,
 	},
 	Refridgerate {
-		ingredient: Reference,
+		ingredient: Ingredient,
 		time: Time,
 	},
 	Bake {
-		ingredient: Reference,
+		ingredient: Ingredient,
 		temperature: Temperature,
 		time: Time,
 	},
@@ -87,6 +87,6 @@ pub enum Instruction {
 
 #[derive(Debug)]
 pub struct Recipe {
-	pub ingredients: HashMap<Reference, Amount>,
+	pub ingredients: HashMap<Ingredient, Amount>,
 	pub instructions: Vec<Instruction>,
 }

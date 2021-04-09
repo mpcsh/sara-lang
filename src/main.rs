@@ -8,21 +8,25 @@ use std::error::Error;
 use std::fs::read_to_string;
 
 mod ast;
+mod bake;
 mod parse;
 mod scan;
 
-use ast::Recipe;
+use bake::Baker;
 use parse::Parser;
 use scan::Scanner;
 
-fn interpret<'a>(source_text: String) -> Result<Recipe, Box<dyn Error>> {
+fn interpret<'a>(source_text: String) -> Result<String, Box<dyn Error>> {
 	let scanner = Scanner::new(&source_text);
 	let tokens = scanner.scan()?;
 
 	let parser = Parser::new(&tokens);
 	let recipe = parser.parse()?;
 
-	return Ok(recipe);
+  let baker = Baker::new(&recipe);
+	let (baked_good, ingredients) = baker.bake();
+
+	return Ok(baked_good);
 }
 
 fn main() {
@@ -33,8 +37,8 @@ fn main() {
 
 	let result = interpret(source_text);
 	match result {
-		Ok(recipe) => {
-			println!("{:?}", recipe);
+		Ok(baked_good) => {
+			println!("{}", baked_good);
 		}
 		Err(error) => {
 			println!("{}", error);
